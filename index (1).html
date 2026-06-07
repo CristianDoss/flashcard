@@ -1,0 +1,1313 @@
+<!DOCTYPE html>
+<html lang="pt-BR" data-theme="dark">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<title>Flashcards · Doss</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Mono:wght@400;500&family=Sora:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg0: #0c0c0f;
+  --bg1: #13131a;
+  --bg2: #1a1a24;
+  --bg3: #22222f;
+  --border: rgba(255,255,255,0.07);
+  --border-hover: rgba(255,255,255,0.14);
+  --text-primary: #f0eff8;
+  --text-secondary: #8b8aa0;
+  --text-tertiary: #4a4963;
+  --accent: #7c6af7;
+  --accent-dim: rgba(124,106,247,0.15);
+  --accent-hover: #9585ff;
+  --green: #2ec98a;
+  --green-dim: rgba(46,201,138,0.12);
+  --red: #f05f6e;
+  --red-dim: rgba(240,95,110,0.12);
+  --amber: #f5a623;
+  --amber-dim: rgba(245,166,35,0.12);
+  --font-display: 'DM Serif Display', serif;
+  --font-body: 'Sora', sans-serif;
+  --font-mono: 'DM Mono', monospace;
+  --radius-sm: 8px;
+  --radius-md: 12px;
+  --radius-lg: 18px;
+  --radius-xl: 24px;
+  --nav-h: 68px;
+  --header-h: 60px;
+}
+[data-theme="light"] {
+  --bg0: #f4f3fb;
+  --bg1: #ffffff;
+  --bg2: #f0eff9;
+  --bg3: #e8e6f5;
+  --border: rgba(0,0,0,0.07);
+  --border-hover: rgba(0,0,0,0.14);
+  --text-primary: #1a1830;
+  --text-secondary: #6b6888;
+  --text-tertiary: #b0aec8;
+  --accent-dim: rgba(124,106,247,0.1);
+}
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+html, body { height: 100%; overflow: hidden; }
+body {
+  font-family: var(--font-body);
+  background: var(--bg0);
+  color: var(--text-primary);
+  font-size: 15px;
+  line-height: 1.6;
+  display: flex;
+  flex-direction: column;
+  max-width: 480px;
+  margin: 0 auto;
+  position: relative;
+}
+
+/* ─── SCROLLABLE MAIN ─── */
+.app-shell {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  overflow: hidden;
+}
+.header {
+  height: var(--header-h);
+  padding: 0 20px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border-bottom: 1px solid var(--border);
+  background: var(--bg0);
+  flex-shrink: 0;
+  z-index: 10;
+}
+.header-title {
+  font-family: var(--font-display);
+  font-size: 20px;
+  color: var(--text-primary);
+  font-style: italic;
+  letter-spacing: -0.3px;
+}
+.header-actions { display: flex; gap: 8px; align-items: center; }
+.icon-btn {
+  width: 36px; height: 36px;
+  border-radius: var(--radius-sm);
+  background: var(--bg2);
+  border: 1px solid var(--border);
+  display: flex; align-items: center; justify-content: center;
+  cursor: pointer;
+  color: var(--text-secondary);
+  font-size: 17px;
+  transition: all .15s;
+}
+.icon-btn:hover { background: var(--bg3); color: var(--text-primary); border-color: var(--border-hover); }
+.screens-wrap { flex: 1; overflow: hidden; position: relative; }
+.screen {
+  position: absolute; inset: 0;
+  overflow-y: auto;
+  padding: 20px 20px calc(var(--nav-h) + 20px);
+  opacity: 0; pointer-events: none;
+  transform: translateY(8px);
+  transition: opacity .2s ease, transform .2s ease;
+}
+.screen.active { opacity: 1; pointer-events: auto; transform: none; }
+
+/* ─── NAV ─── */
+.bottom-nav {
+  height: var(--nav-h);
+  display: flex;
+  border-top: 1px solid var(--border);
+  background: var(--bg0);
+  flex-shrink: 0;
+  padding-bottom: env(safe-area-inset-bottom);
+  z-index: 10;
+}
+.nav-item {
+  flex: 1; display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  gap: 4px; cursor: pointer;
+  color: var(--text-tertiary);
+  font-size: 10px; font-weight: 500; letter-spacing: .5px; text-transform: uppercase;
+  transition: color .15s;
+  border: none; background: none;
+}
+.nav-item svg { width: 22px; height: 22px; stroke: currentColor; fill: none; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round; }
+.nav-item.active { color: var(--accent); }
+.nav-item.active svg { stroke: var(--accent); }
+
+/* ─── CARDS / COMPONENTS ─── */
+.card {
+  background: var(--bg1);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: 16px;
+}
+.pill {
+  display: inline-flex; align-items: center; gap: 5px;
+  font-size: 11px; font-weight: 500; letter-spacing: .3px;
+  padding: 3px 10px; border-radius: 99px;
+}
+.pill-accent { background: var(--accent-dim); color: var(--accent); }
+.pill-green { background: var(--green-dim); color: var(--green); }
+.pill-red { background: var(--red-dim); color: var(--red); }
+.pill-amber { background: var(--amber-dim); color: var(--amber); }
+
+/* ─── HOME SCREEN ─── */
+.streak-bar {
+  background: var(--bg1);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: 14px 18px;
+  display: flex; align-items: center; gap: 14px;
+  margin-bottom: 20px;
+}
+.streak-num { font-family: var(--font-display); font-size: 36px; color: var(--amber); line-height: 1; }
+.streak-label { font-size: 13px; color: var(--text-secondary); }
+.streak-label strong { display: block; font-size: 15px; color: var(--text-primary); font-weight: 500; }
+.section-title {
+  font-size: 11px; font-weight: 600; letter-spacing: 1px;
+  text-transform: uppercase; color: var(--text-tertiary);
+  margin-bottom: 12px;
+}
+.folder-grid {
+  display: grid; grid-template-columns: 1fr 1fr;
+  gap: 10px; margin-bottom: 20px;
+}
+.folder-tile {
+  background: var(--bg1);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: 16px;
+  cursor: pointer;
+  transition: border-color .15s, background .15s;
+  position: relative; overflow: hidden;
+}
+.folder-tile::before {
+  content: '';
+  position: absolute; top: 0; left: 0; right: 0; height: 2px;
+  border-radius: 99px 99px 0 0;
+  background: var(--folder-color, var(--accent));
+}
+.folder-tile:hover { border-color: var(--border-hover); background: var(--bg2); }
+.folder-emoji { font-size: 22px; margin-bottom: 10px; display: block; }
+.folder-name { font-size: 14px; font-weight: 500; margin-bottom: 3px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.folder-meta { font-size: 12px; color: var(--text-secondary); }
+.folder-tile.add-tile {
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  border-style: dashed; color: var(--text-tertiary); gap: 6px;
+  font-size: 13px;
+}
+.folder-tile.add-tile svg { width: 24px; height: 24px; stroke: currentColor; fill:none; stroke-width:1.5; stroke-linecap:round; }
+.continue-card {
+  background: linear-gradient(135deg, var(--accent-dim), transparent);
+  border: 1px solid var(--accent);
+  border-radius: var(--radius-lg);
+  padding: 16px;
+  display: flex; align-items: center; gap: 14px;
+  cursor: pointer; margin-bottom: 20px;
+  transition: opacity .15s;
+}
+.continue-card:hover { opacity: .85; }
+.continue-icon {
+  width: 46px; height: 46px; border-radius: var(--radius-md);
+  background: var(--accent-dim); display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0;
+}
+.continue-icon svg { width: 22px; height: 22px; stroke: var(--accent); fill:none; stroke-width:2; stroke-linecap:round; stroke-linejoin:round; }
+
+/* ─── FOLDER DETAIL ─── */
+.stat-row { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; margin-bottom: 20px; }
+.stat-box {
+  background: var(--bg1); border: 1px solid var(--border);
+  border-radius: var(--radius-md); padding: 12px;
+  text-align: center;
+}
+.stat-num { font-family: var(--font-display); font-size: 28px; line-height: 1; margin-bottom: 3px; }
+.stat-lbl { font-size: 11px; color: var(--text-secondary); }
+.card-list-item {
+  background: var(--bg1); border: 1px solid var(--border);
+  border-radius: var(--radius-md); padding: 12px 14px;
+  display: flex; align-items: center; gap: 12px;
+  cursor: pointer; transition: border-color .15s;
+  margin-bottom: 8px;
+}
+.card-list-item:hover { border-color: var(--border-hover); }
+.card-thumb {
+  width: 38px; height: 38px; border-radius: var(--radius-sm);
+  background: var(--bg2); flex-shrink: 0;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 18px; overflow: hidden;
+}
+.card-thumb img { width: 100%; height: 100%; object-fit: cover; }
+.card-item-q { font-size: 13px; font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.card-item-meta { font-size: 11px; color: var(--text-secondary); margin-top: 2px; }
+.card-actions { margin-left: auto; display: flex; gap: 6px; }
+.mini-btn {
+  width: 30px; height: 30px; border-radius: var(--radius-sm);
+  background: var(--bg2); border: 1px solid var(--border);
+  display: flex; align-items: center; justify-content: center;
+  cursor: pointer; color: var(--text-secondary); font-size: 14px;
+  transition: all .15s; flex-shrink: 0;
+}
+.mini-btn:hover { background: var(--bg3); color: var(--text-primary); }
+.mini-btn.danger:hover { background: var(--red-dim); color: var(--red); border-color: var(--red); }
+
+/* ─── PLAY SCREEN ─── */
+.play-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px; }
+.progress-track { flex: 1; height: 4px; background: var(--bg3); border-radius: 99px; margin: 0 14px; overflow: hidden; }
+.progress-fill { height: 100%; background: var(--accent); border-radius: 99px; transition: width .4s ease; }
+.flashcard-wrap {
+  perspective: 1000px;
+  margin-bottom: 24px;
+  cursor: pointer;
+}
+.flashcard-inner {
+  position: relative;
+  transform-style: preserve-3d;
+  transition: transform .5s cubic-bezier(.4,0,.2,1);
+  min-height: 240px;
+}
+.flashcard-inner.flipped { transform: rotateY(180deg); }
+.flashcard-face {
+  position: absolute; inset: 0;
+  background: var(--bg1); border: 1px solid var(--border);
+  border-radius: var(--radius-xl);
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  padding: 28px 24px;
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+  text-align: center;
+}
+.flashcard-face.back { transform: rotateY(180deg); background: var(--bg2); }
+.flashcard-face.back .fc-text { color: var(--text-primary); }
+.fc-tag { font-size: 11px; color: var(--text-tertiary); margin-bottom: 16px; }
+.fc-img { max-width: 120px; max-height: 120px; border-radius: var(--radius-md); object-fit: cover; margin-bottom: 16px; }
+.fc-text {
+  font-family: var(--font-display); font-style: italic;
+  font-size: 22px; line-height: 1.3; color: var(--text-primary);
+}
+.fc-answer { font-size: 14px; line-height: 1.6; color: var(--text-secondary); }
+.fc-hint { font-size: 12px; color: var(--text-tertiary); margin-top: 20px; }
+.rate-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; }
+.rate-btn {
+  padding: 14px 8px; border-radius: var(--radius-md);
+  border: 1px solid var(--border); background: var(--bg1);
+  cursor: pointer; font-family: var(--font-body); font-size: 13px;
+  font-weight: 500; color: var(--text-secondary);
+  display: flex; flex-direction: column; align-items: center; gap: 5px;
+  transition: all .15s;
+}
+.rate-btn .rate-days { font-size: 11px; color: var(--text-tertiary); font-weight: 400; }
+.rate-btn.again { background: var(--red-dim); color: var(--red); border-color: var(--red); }
+.rate-btn.hard { background: var(--amber-dim); color: var(--amber); border-color: var(--amber); }
+.rate-btn.good { background: var(--green-dim); color: var(--green); border-color: var(--green); }
+.rate-btn:hover { transform: translateY(-2px); }
+
+/* ─── SESSION COMPLETE ─── */
+.session-complete {
+  text-align: center; padding: 40px 0;
+}
+.session-big-num {
+  font-family: var(--font-display); font-size: 72px;
+  color: var(--green); line-height: 1;
+}
+
+/* ─── ADD/EDIT SCREEN ─── */
+.form-group { margin-bottom: 18px; }
+.form-label { font-size: 12px; font-weight: 500; color: var(--text-secondary); letter-spacing: .3px; margin-bottom: 8px; display: block; }
+.form-input, .form-textarea, .form-select {
+  width: 100%; background: var(--bg1);
+  border: 1px solid var(--border); border-radius: var(--radius-md);
+  color: var(--text-primary); font-family: var(--font-body);
+  font-size: 14px; padding: 11px 14px;
+  outline: none; transition: border-color .15s;
+  appearance: none; -webkit-appearance: none;
+}
+.form-input:focus, .form-textarea:focus, .form-select:focus { border-color: var(--accent); }
+.form-textarea { resize: none; line-height: 1.6; }
+.form-select option { background: var(--bg1); }
+.img-upload-zone {
+  border: 1px dashed var(--border-hover); border-radius: var(--radius-md);
+  padding: 20px; text-align: center;
+  cursor: pointer; color: var(--text-tertiary);
+  font-size: 13px; transition: border-color .15s;
+  position: relative;
+}
+.img-upload-zone:hover { border-color: var(--accent); color: var(--accent); }
+.img-upload-zone input[type=file] { position: absolute; inset: 0; opacity: 0; cursor: pointer; }
+.img-preview { width: 100%; max-height: 150px; object-fit: cover; border-radius: var(--radius-md); margin-bottom: 8px; }
+.btn-primary {
+  width: 100%; padding: 14px; border-radius: var(--radius-md);
+  background: var(--accent); color: #fff; font-family: var(--font-body);
+  font-size: 15px; font-weight: 500; border: none; cursor: pointer;
+  transition: opacity .15s, transform .1s;
+}
+.btn-primary:hover { opacity: .9; }
+.btn-primary:active { transform: scale(.98); }
+.btn-secondary {
+  width: 100%; padding: 13px; border-radius: var(--radius-md);
+  background: transparent; color: var(--text-secondary);
+  border: 1px solid var(--border); font-family: var(--font-body);
+  font-size: 14px; cursor: pointer; transition: all .15s;
+  margin-top: 8px;
+}
+.btn-secondary:hover { background: var(--bg2); color: var(--text-primary); }
+
+/* ─── SETTINGS ─── */
+.settings-section { margin-bottom: 24px; }
+.setting-row {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 14px 0; border-bottom: 1px solid var(--border);
+}
+.setting-row:last-child { border-bottom: none; }
+.setting-label { font-size: 14px; }
+.setting-sub { font-size: 12px; color: var(--text-secondary); margin-top: 1px; }
+.toggle {
+  width: 44px; height: 26px; border-radius: 99px;
+  background: var(--bg3); position: relative; cursor: pointer;
+  transition: background .2s; flex-shrink: 0;
+}
+.toggle.on { background: var(--accent); }
+.toggle::after {
+  content: ''; position: absolute; top: 3px; left: 3px;
+  width: 20px; height: 20px; border-radius: 50%; background: #fff;
+  transition: transform .2s;
+}
+.toggle.on::after { transform: translateX(18px); }
+
+/* ─── MODAL ─── */
+.modal-backdrop {
+  position: fixed; inset: 0; background: rgba(0,0,0,.6);
+  backdrop-filter: blur(4px); z-index: 100;
+  display: flex; align-items: flex-end;
+  opacity: 0; pointer-events: none; transition: opacity .2s;
+}
+.modal-backdrop.open { opacity: 1; pointer-events: auto; }
+.modal-sheet {
+  background: var(--bg1); border-radius: var(--radius-xl) var(--radius-xl) 0 0;
+  border: 1px solid var(--border); border-bottom: none;
+  padding: 20px 20px calc(20px + env(safe-area-inset-bottom));
+  width: 100%; transform: translateY(100%);
+  transition: transform .3s cubic-bezier(.4,0,.2,1);
+}
+.modal-backdrop.open .modal-sheet { transform: none; }
+.modal-handle { width: 36px; height: 4px; border-radius: 99px; background: var(--border-hover); margin: 0 auto 20px; }
+.modal-title { font-family: var(--font-display); font-style: italic; font-size: 19px; margin-bottom: 16px; }
+
+/* ─── DRIVE STATUS ─── */
+.drive-status {
+  display: flex; align-items: center; gap: 8px;
+  padding: 10px 14px; border-radius: var(--radius-md);
+  background: var(--bg2); border: 1px solid var(--border);
+  font-size: 13px; color: var(--text-secondary); margin-bottom: 16px;
+}
+.drive-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--text-tertiary); flex-shrink: 0; }
+.drive-dot.synced { background: var(--green); }
+.drive-dot.syncing { background: var(--amber); animation: pulse 1s infinite; }
+@keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.4} }
+
+/* ─── EMPTY STATE ─── */
+.empty-state { text-align: center; padding: 48px 20px; color: var(--text-tertiary); }
+.empty-state svg { width: 48px; height: 48px; stroke: currentColor; fill:none; stroke-width:1.2; stroke-linecap:round; opacity:.5; margin-bottom:14px; }
+.empty-state p { font-size: 14px; }
+
+/* ─── MISC ─── */
+.back-btn {
+  display: flex; align-items: center; gap: 6px;
+  color: var(--text-secondary); font-size: 13px; cursor: pointer;
+  margin-bottom: 20px; border: none; background: none;
+  font-family: var(--font-body);
+}
+.back-btn:hover { color: var(--text-primary); }
+.back-btn svg { width: 16px; height: 16px; stroke: currentColor; fill:none; stroke-width:2; stroke-linecap:round; }
+.divider { height: 1px; background: var(--border); margin: 16px 0; }
+::-webkit-scrollbar { width: 0; }
+</style>
+</head>
+<body>
+<div class="app-shell">
+
+  <!-- HEADER -->
+  <div class="header">
+    <span class="header-title" id="headerTitle">Flashcards</span>
+    <div class="header-actions">
+      <div class="icon-btn" id="themeToggleBtn" onclick="toggleTheme()" title="Alternar tema">
+        <svg viewBox="0 0 24 24" width="18" height="18" stroke="currentColor" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+      </div>
+      <div class="icon-btn" onclick="syncDrive()" title="Sincronizar Drive" id="syncBtn">
+        <svg viewBox="0 0 24 24" width="18" height="18" stroke="currentColor" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>
+      </div>
+    </div>
+  </div>
+
+  <!-- SCREENS -->
+  <div class="screens-wrap">
+
+    <!-- HOME -->
+    <div class="screen active" id="screen-home">
+      <div id="streakBar" class="streak-bar" style="display:none">
+        <div class="streak-num" id="streakNum">0</div>
+        <div>
+          <div class="streak-label"><strong id="streakMsg">dias seguidos</strong>Continue assim!</div>
+        </div>
+      </div>
+
+      <div id="continueSection" style="display:none">
+        <p class="section-title">Continuar</p>
+        <div class="continue-card" id="continueCard" onclick="startSessionFromContinue()">
+          <div class="continue-icon">
+            <svg viewBox="0 0 24 24"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+          </div>
+          <div>
+            <div style="font-size:14px;font-weight:500" id="continueTitle">—</div>
+            <div style="font-size:12px;color:var(--text-secondary);margin-top:2px" id="continueMeta">—</div>
+          </div>
+        </div>
+      </div>
+
+      <p class="section-title">Pastas</p>
+      <div class="folder-grid" id="folderGrid"></div>
+    </div>
+
+    <!-- FOLDER DETAIL -->
+    <div class="screen" id="screen-folder">
+      <button class="back-btn" onclick="goTo('home')">
+        <svg viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg>
+        Voltar
+      </button>
+      <div class="stat-row" id="folderStats"></div>
+      <button class="btn-primary" id="studyBtn" onclick="startFolderSession()" style="margin-bottom:20px">
+        Estudar agora
+      </button>
+      <p class="section-title">Cards</p>
+      <div id="cardList"></div>
+    </div>
+
+    <!-- PLAY -->
+    <div class="screen" id="screen-play">
+      <div class="play-header">
+        <button class="back-btn" style="margin:0" onclick="endSession()">
+          <svg viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg>
+        </button>
+        <div class="progress-track">
+          <div class="progress-fill" id="progressFill"></div>
+        </div>
+        <span style="font-size:12px;color:var(--text-secondary)" id="progressLabel">0/0</span>
+      </div>
+      <div id="sessionContent"></div>
+    </div>
+
+    <!-- ADD/EDIT -->
+    <div class="screen" id="screen-add">
+      <button class="back-btn" onclick="cancelEdit()">
+        <svg viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg>
+        Cancelar
+      </button>
+      <p style="font-family:var(--font-display);font-style:italic;font-size:20px;margin-bottom:20px" id="addTitle">Novo card</p>
+
+      <div class="form-group">
+        <label class="form-label">Frente (pergunta)</label>
+        <textarea class="form-textarea" id="inputFront" rows="3" placeholder="Ex: Qual o mecanismo dos IECAs?"></textarea>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Verso (resposta)</label>
+        <textarea class="form-textarea" id="inputBack" rows="4" placeholder="Ex: Inibem a ECA, bloqueando angiotensina I → II..."></textarea>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Imagem (opcional)</label>
+        <div class="img-upload-zone" id="uploadZone">
+          <img id="imgPreview" class="img-preview" style="display:none">
+          <div id="uploadPlaceholder">
+            <svg viewBox="0 0 24 24" width="28" height="28" stroke="currentColor" fill="none" stroke-width="1.5" stroke-linecap="round" style="margin-bottom:6px"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+            <div>Toque para adicionar foto</div>
+            <div style="font-size:11px;margin-top:4px;opacity:.7">JPG, PNG até 5MB</div>
+          </div>
+          <input type="file" accept="image/*" onchange="handleImageUpload(event)">
+        </div>
+        <button class="btn-secondary" id="removeImgBtn" style="display:none;margin-top:6px" onclick="removeImage()">Remover imagem</button>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Pasta</label>
+        <select class="form-select" id="inputFolder"></select>
+        <input class="form-input" id="inputNewFolder" placeholder="Nome da nova pasta..." style="display:none;margin-top:8px">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Tags (separadas por vírgula)</label>
+        <input class="form-input" id="inputTags" placeholder="Ex: farmacologia, cardio, mecanismo">
+      </div>
+      <button class="btn-primary" onclick="saveCard()">Salvar card</button>
+      <button class="btn-secondary" id="deleteCardBtn" style="display:none;color:var(--red);border-color:var(--red)" onclick="deleteCurrentCard()">Excluir card</button>
+    </div>
+
+    <!-- SETTINGS -->
+    <div class="screen" id="screen-settings">
+      <p style="font-family:var(--font-display);font-style:italic;font-size:20px;margin-bottom:20px">Configurações</p>
+
+      <div class="drive-status">
+        <div class="drive-dot" id="driveDot"></div>
+        <span id="driveStatusText">Google Drive: não sincronizado</span>
+      </div>
+
+      <div class="settings-section">
+        <p class="section-title">Estudo</p>
+        <div class="card">
+          <div class="setting-row">
+            <div>
+              <div class="setting-label">Limite diário de cards</div>
+              <div class="setting-sub">Máx. de cards novos por dia</div>
+            </div>
+            <select class="form-select" style="width:80px" id="dailyLimit" onchange="saveSetting('dailyLimit',this.value)">
+              <option value="10">10</option><option value="20" selected>20</option>
+              <option value="30">30</option><option value="50">50</option><option value="100">100</option>
+            </select>
+          </div>
+          <div class="setting-row">
+            <div>
+              <div class="setting-label">Mostrar imagem na frente</div>
+              <div class="setting-sub">Exibe foto antes de virar</div>
+            </div>
+            <div class="toggle on" id="toggleImgFront" onclick="toggleSetting('showImgFront', this)"></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="settings-section">
+        <p class="section-title">Dados</p>
+        <div class="card">
+          <div class="setting-row">
+            <div>
+              <div class="setting-label">Exportar todos os dados</div>
+              <div class="setting-sub">Baixar JSON com todos os cards</div>
+            </div>
+            <button class="btn-secondary" style="width:auto;padding:6px 14px;margin:0;font-size:13px" onclick="exportData()">Exportar</button>
+          </div>
+          <div class="setting-row">
+            <div>
+              <div class="setting-label">Importar dados</div>
+              <div class="setting-sub">Restaurar de um JSON exportado</div>
+            </div>
+            <label style="cursor:pointer">
+              <input type="file" accept=".json" style="display:none" onchange="importData(event)">
+              <span class="btn-secondary" style="width:auto;padding:6px 14px;margin:0;font-size:13px;display:inline-block">Importar</span>
+            </label>
+          </div>
+          <div class="setting-row">
+            <div>
+              <div class="setting-label">Limpar todos os dados</div>
+              <div class="setting-sub" style="color:var(--red)">Ação irreversível</div>
+            </div>
+            <button class="btn-secondary" style="width:auto;padding:6px 14px;margin:0;font-size:13px;color:var(--red);border-color:var(--red)" onclick="clearAllData()">Limpar</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="settings-section">
+        <p class="section-title">Sobre</p>
+        <div class="card">
+          <div class="setting-row">
+            <div class="setting-label">Versão</div>
+            <div style="font-size:13px;color:var(--text-secondary);font-family:var(--font-mono)">1.0.0</div>
+          </div>
+          <div class="setting-row">
+            <div class="setting-label">Total de cards</div>
+            <div style="font-size:13px;color:var(--text-secondary);font-family:var(--font-mono)" id="totalCardsCount">0</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div><!-- end screens-wrap -->
+
+  <!-- BOTTOM NAV -->
+  <nav class="bottom-nav">
+    <button class="nav-item active" onclick="goTo('home')" id="nav-home">
+      <svg viewBox="0 0 24 24"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+      Início
+    </button>
+    <button class="nav-item" onclick="goTo('play');startAllDueSession()" id="nav-play">
+      <svg viewBox="0 0 24 24"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+      Estudar
+    </button>
+    <button class="nav-item" onclick="openAddCard()" id="nav-add">
+      <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/></svg>
+      Novo
+    </button>
+    <button class="nav-item" onclick="goTo('settings')" id="nav-settings">
+      <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+      Config
+    </button>
+  </nav>
+</div>
+
+<!-- MODAL: New Folder -->
+<div class="modal-backdrop" id="newFolderModal">
+  <div class="modal-sheet">
+    <div class="modal-handle"></div>
+    <p class="modal-title">Nova pasta</p>
+    <div class="form-group">
+      <label class="form-label">Nome</label>
+      <input class="form-input" id="newFolderName" placeholder="Ex: Farmacologia">
+    </div>
+    <div class="form-group">
+      <label class="form-label">Emoji</label>
+      <div style="display:flex;flex-wrap:wrap;gap:8px" id="emojiPicker">
+        📚🧠💊🫀🧬🔬🩺🧪📋🫁🦴🩻🧫💉🩹🌡️🧾📌
+      </div>
+    </div>
+    <div class="form-group">
+      <label class="form-label">Cor</label>
+      <div style="display:flex;gap:8px" id="colorPicker">
+        <div class="color-dot" data-color="#7c6af7" style="background:#7c6af7"></div>
+        <div class="color-dot" data-color="#2ec98a" style="background:#2ec98a"></div>
+        <div class="color-dot" data-color="#f5a623" style="background:#f5a623"></div>
+        <div class="color-dot" data-color="#f05f6e" style="background:#f05f6e"></div>
+        <div class="color-dot" data-color="#5bc4f5" style="background:#5bc4f5"></div>
+        <div class="color-dot" data-color="#b07cfb" style="background:#b07cfb"></div>
+      </div>
+    </div>
+    <button class="btn-primary" onclick="createFolder()">Criar pasta</button>
+    <button class="btn-secondary" onclick="closeModal('newFolderModal')">Cancelar</button>
+  </div>
+</div>
+
+<style>
+.color-dot {
+  width:32px;height:32px;border-radius:50%;cursor:pointer;
+  border:2px solid transparent;transition:border-color .15s;flex-shrink:0;
+}
+.color-dot.selected { border-color: var(--text-primary); }
+</style>
+
+<script>
+// ═══════════════════════════════
+//  STATE
+// ═══════════════════════════════
+let state = {
+  folders: [],
+  cards: [],
+  reviews: {}, // cardId -> {due, interval, ease, reps}
+  settings: { dailyLimit: 20, showImgFront: true, theme: 'dark', streak: 0, lastStudyDate: null },
+  driveFileId: null
+};
+
+let currentFolderId = null;
+let currentSession = [];
+let sessionIndex = 0;
+let editingCardId = null;
+let selectedEmoji = '📚';
+let selectedColor = '#7c6af7';
+let currentImage = null; // base64
+
+// ═══════════════════════════════
+//  PERSISTENCE
+// ═══════════════════════════════
+function save() {
+  localStorage.setItem('fc_state', JSON.stringify(state));
+}
+function load() {
+  const raw = localStorage.getItem('fc_state');
+  if (raw) {
+    try { state = { ...state, ...JSON.parse(raw) }; } catch(e) {}
+  }
+  // Ensure arrays exist
+  state.folders = state.folders || [];
+  state.cards = state.cards || [];
+  state.reviews = state.reviews || {};
+  state.settings = { dailyLimit:20, showImgFront:true, theme:'dark', streak:0, lastStudyDate:null, ...state.settings };
+}
+
+// ═══════════════════════════════
+//  SPACED REPETITION (SM-2 variant)
+// ═══════════════════════════════
+function getReview(cardId) {
+  return state.reviews[cardId] || { due: Date.now(), interval: 0, ease: 2.5, reps: 0 };
+}
+function updateReview(cardId, quality) {
+  // quality: 0=again, 1=hard, 2=good
+  const r = getReview(cardId);
+  const now = Date.now();
+  const DAY = 86400000;
+  let { interval, ease, reps } = r;
+
+  if (quality === 0) { // Again
+    reps = 0; interval = 0; ease = Math.max(1.3, ease - 0.2);
+  } else if (quality === 1) { // Hard
+    if (reps === 0) interval = 1;
+    else interval = Math.max(1, Math.round(interval * 1.2));
+    ease = Math.max(1.3, ease - 0.15);
+    reps++;
+  } else { // Good
+    if (reps === 0) interval = 1;
+    else if (reps === 1) interval = 4;
+    else interval = Math.round(interval * ease);
+    ease = Math.min(3.5, ease + 0.05);
+    reps++;
+  }
+  state.reviews[cardId] = { due: now + interval * DAY, interval, ease, reps };
+  save();
+}
+function getDueCards(folderId) {
+  const now = Date.now();
+  return state.cards.filter(c =>
+    (!folderId || c.folderId === folderId) &&
+    (getReview(c.id).due <= now)
+  );
+}
+function getNextDue(cardId) {
+  const r = getReview(cardId);
+  const diff = r.due - Date.now();
+  if (diff <= 0) return 'Agora';
+  const days = Math.ceil(diff / 86400000);
+  if (days === 1) return '1 dia';
+  return `${days} dias`;
+}
+
+// ═══════════════════════════════
+//  THEME
+// ═══════════════════════════════
+function applyTheme(t) {
+  document.documentElement.setAttribute('data-theme', t);
+  state.settings.theme = t;
+  save();
+}
+function toggleTheme() {
+  applyTheme(state.settings.theme === 'dark' ? 'light' : 'dark');
+}
+
+// ═══════════════════════════════
+//  NAVIGATION
+// ═══════════════════════════════
+const titles = { home:'Flashcards', folder:'Pasta', play:'Estudando', add:'Novo card', settings:'Configurações' };
+function goTo(screen) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById('screen-' + screen).classList.add('active');
+  document.getElementById('headerTitle').textContent = titles[screen] || '';
+  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+  const navEl = document.getElementById('nav-' + screen);
+  if (navEl) navEl.classList.add('active');
+  if (screen === 'home') renderHome();
+  if (screen === 'settings') renderSettings();
+}
+
+// ═══════════════════════════════
+//  HOME
+// ═══════════════════════════════
+function renderHome() {
+  // Streak
+  updateStreak();
+  const streak = state.settings.streak || 0;
+  const streakBar = document.getElementById('streakBar');
+  if (streak > 0) {
+    streakBar.style.display = 'flex';
+    document.getElementById('streakNum').textContent = streak;
+    document.getElementById('streakMsg').textContent = streak === 1 ? '1 dia seguido · ' : `${streak} dias seguidos · `;
+  } else {
+    streakBar.style.display = 'none';
+  }
+
+  // Continue card
+  const allDue = getDueCards(null);
+  const contSec = document.getElementById('continueSection');
+  if (allDue.length > 0) {
+    contSec.style.display = 'block';
+    document.getElementById('continueTitle').textContent = `${allDue.length} card${allDue.length > 1 ? 's' : ''} para revisar`;
+    document.getElementById('continueMeta').textContent = 'Em todas as pastas · clique para começar';
+  } else {
+    contSec.style.display = 'none';
+  }
+
+  // Folders
+  const grid = document.getElementById('folderGrid');
+  grid.innerHTML = '';
+  state.folders.forEach(f => {
+    const cards = state.cards.filter(c => c.folderId === f.id);
+    const due = getDueCards(f.id).length;
+    const pill = due > 0 ? `<span class="pill pill-amber" style="margin-top:10px;display:inline-flex">${due} revisar</span>` : `<span class="pill pill-green" style="margin-top:10px;display:inline-flex">Em dia</span>`;
+    const div = document.createElement('div');
+    div.className = 'folder-tile';
+    div.style.setProperty('--folder-color', f.color || '#7c6af7');
+    div.innerHTML = `<span class="folder-emoji">${f.emoji || '📚'}</span><div class="folder-name">${f.name}</div><div class="folder-meta">${cards.length} cards</div>${pill}`;
+    div.onclick = () => openFolder(f.id);
+    grid.appendChild(div);
+  });
+  // Add tile
+  const addTile = document.createElement('div');
+  addTile.className = 'folder-tile add-tile';
+  addTile.innerHTML = `<svg viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>Nova pasta`;
+  addTile.onclick = () => openModal('newFolderModal');
+  grid.appendChild(addTile);
+
+  document.getElementById('totalCardsCount').textContent = state.cards.length;
+}
+
+function updateStreak() {
+  const today = new Date().toDateString();
+  if (state.settings.lastStudyDate === today) return;
+  const yesterday = new Date(Date.now() - 86400000).toDateString();
+  if (state.settings.lastStudyDate === yesterday) {
+    // streak continues (will increment on study)
+  } else if (state.settings.lastStudyDate && state.settings.lastStudyDate !== today) {
+    state.settings.streak = 0;
+    save();
+  }
+}
+
+function startSessionFromContinue() { goTo('play'); startAllDueSession(); }
+
+// ═══════════════════════════════
+//  FOLDER
+// ═══════════════════════════════
+function openFolder(folderId) {
+  currentFolderId = folderId;
+  const folder = state.folders.find(f => f.id === folderId);
+  document.getElementById('headerTitle').textContent = folder ? folder.name : 'Pasta';
+  renderFolder();
+  goToRaw('folder');
+}
+function goToRaw(screen) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById('screen-' + screen).classList.add('active');
+  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+}
+function renderFolder() {
+  const cards = state.cards.filter(c => c.folderId === currentFolderId);
+  const due = getDueCards(currentFolderId).length;
+  const mastered = cards.filter(c => (state.reviews[c.id]?.reps || 0) >= 3).length;
+
+  document.getElementById('folderStats').innerHTML = `
+    <div class="stat-box"><div class="stat-num">${cards.length}</div><div class="stat-lbl">Total</div></div>
+    <div class="stat-box"><div class="stat-num" style="color:var(--green)">${mastered}</div><div class="stat-lbl">Dominados</div></div>
+    <div class="stat-box"><div class="stat-num" style="color:var(--amber)">${due}</div><div class="stat-lbl">Revisar</div></div>
+  `;
+  document.getElementById('studyBtn').textContent = due > 0 ? `Estudar agora (${due})` : 'Nenhum card para revisar';
+  document.getElementById('studyBtn').disabled = due === 0;
+
+  const list = document.getElementById('cardList');
+  list.innerHTML = '';
+  if (cards.length === 0) {
+    list.innerHTML = `<div class="empty-state"><svg viewBox="0 0 24 24"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg><p>Nenhum card ainda.<br>Crie o primeiro!</p></div>`;
+    return;
+  }
+  cards.forEach(card => {
+    const r = getReview(card.id);
+    const status = r.reps >= 3 ? '<span class="pill pill-green">Dominado</span>' : r.due <= Date.now() ? '<span class="pill pill-amber">Revisar</span>' : `<span class="pill" style="background:var(--bg3);color:var(--text-secondary)">${getNextDue(card.id)}</span>`;
+    const thumb = card.imageBase64
+      ? `<div class="card-thumb"><img src="${card.imageBase64}" alt=""></div>`
+      : `<div class="card-thumb" style="font-size:18px">${state.folders.find(f=>f.id===card.folderId)?.emoji || '📋'}</div>`;
+    const div = document.createElement('div');
+    div.className = 'card-list-item';
+    div.innerHTML = `${thumb}<div style="flex:1;min-width:0"><div class="card-item-q">${card.front}</div><div class="card-item-meta" style="display:flex;gap:6px;flex-wrap:wrap;margin-top:4px">${status}</div></div><div class="card-actions"><div class="mini-btn" onclick="editCard('${card.id}')"><svg viewBox="0 0 24 24" width="14" height="14" stroke="currentColor" fill="none" stroke-width="2" stroke-linecap="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg></div><div class="mini-btn danger" onclick="deleteCard('${card.id}')"><svg viewBox="0 0 24 24" width="14" height="14" stroke="currentColor" fill="none" stroke-width="2" stroke-linecap="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4h6v2"/></svg></div></div>`;
+    list.appendChild(div);
+  });
+}
+function startFolderSession() {
+  goTo('play');
+  startSession(getDueCards(currentFolderId));
+}
+
+// ═══════════════════════════════
+//  SESSION / PLAY
+// ═══════════════════════════════
+function startAllDueSession() { startSession(getDueCards(null)); }
+function startSession(cards) {
+  currentSession = shuffle([...cards]);
+  sessionIndex = 0;
+  renderSessionCard();
+}
+function renderSessionCard() {
+  const content = document.getElementById('sessionContent');
+  if (sessionIndex >= currentSession.length) {
+    // Session complete
+    const today = new Date().toDateString();
+    if (state.settings.lastStudyDate !== today) {
+      state.settings.streak = (state.settings.streak || 0) + 1;
+      state.settings.lastStudyDate = today;
+      save();
+    }
+    content.innerHTML = `<div class="session-complete">
+      <div class="session-big-num">🎉</div>
+      <p style="font-family:var(--font-display);font-style:italic;font-size:24px;margin:16px 0 8px">Sessão completa!</p>
+      <p style="color:var(--text-secondary);margin-bottom:32px">${currentSession.length} cards revisados</p>
+      <button class="btn-primary" onclick="endSession()">Voltar ao início</button>
+    </div>`;
+    document.getElementById('progressFill').style.width = '100%';
+    document.getElementById('progressLabel').textContent = `${currentSession.length}/${currentSession.length}`;
+    return;
+  }
+  const card = currentSession[sessionIndex];
+  const pct = Math.round((sessionIndex / currentSession.length) * 100);
+  document.getElementById('progressFill').style.width = pct + '%';
+  document.getElementById('progressLabel').textContent = `${sessionIndex}/${currentSession.length}`;
+
+  const showImg = card.imageBase64 && state.settings.showImgFront;
+  const imgHtml = showImg ? `<img src="${card.imageBase64}" class="fc-img" alt="imagem">` : '';
+  const folder = state.folders.find(f => f.id === card.folderId);
+  const tagHtml = folder ? `<div class="fc-tag">${folder.emoji || ''} ${folder.name}</div>` : '';
+  const backImgHtml = card.imageBase64 && !state.settings.showImgFront ? `<img src="${card.imageBase64}" class="fc-img" alt="imagem">` : '';
+
+  content.innerHTML = `
+    <div class="flashcard-wrap" onclick="flipCard()">
+      <div class="flashcard-inner" id="fcInner">
+        <div class="flashcard-face front">
+          ${tagHtml}${imgHtml}
+          <div class="fc-text">${card.front}</div>
+          <div class="fc-hint">Toque para revelar</div>
+        </div>
+        <div class="flashcard-face back">
+          ${tagHtml}${backImgHtml}
+          <div class="fc-text" style="font-size:15px;font-style:normal;font-family:var(--font-body);margin-bottom:8px">${card.front}</div>
+          <div class="divider"></div>
+          <div class="fc-answer">${card.back}</div>
+        </div>
+      </div>
+    </div>
+    <div class="rate-grid" id="rateGrid" style="display:none">
+      <button class="rate-btn again" onclick="rateCard(0)">
+        <svg viewBox="0 0 24 24" width="20" height="20" stroke="currentColor" fill="none" stroke-width="2" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+        Errei
+        <span class="rate-days">Revisar logo</span>
+      </button>
+      <button class="rate-btn hard" onclick="rateCard(1)">
+        <svg viewBox="0 0 24 24" width="20" height="20" stroke="currentColor" fill="none" stroke-width="2" stroke-linecap="round"><line x1="5" y1="12" x2="19" y2="12"/></svg>
+        Difícil
+        <span class="rate-days" id="hardDays">—</span>
+      </button>
+      <button class="rate-btn good" onclick="rateCard(2)">
+        <svg viewBox="0 0 24 24" width="20" height="20" stroke="currentColor" fill="none" stroke-width="2" stroke-linecap="round"><polyline points="20 6 9 17 4 12"/></svg>
+        Acertei
+        <span class="rate-days" id="goodDays">—</span>
+      </button>
+    </div>
+  `;
+  // compute preview days
+  const r = getReview(card.id);
+  const hardInterval = Math.max(1, Math.round((r.interval||1) * 1.2));
+  const goodInterval = r.reps === 0 ? 1 : r.reps === 1 ? 4 : Math.round((r.interval||1) * r.ease);
+  setTimeout(() => {
+    const hd = document.getElementById('hardDays');
+    const gd = document.getElementById('goodDays');
+    if(hd) hd.textContent = hardInterval + ' dia' + (hardInterval>1?'s':'');
+    if(gd) gd.textContent = goodInterval + ' dia' + (goodInterval>1?'s':'');
+  }, 0);
+}
+function flipCard() {
+  const inner = document.getElementById('fcInner');
+  if (!inner || inner.classList.contains('flipped')) return;
+  inner.classList.add('flipped');
+  document.getElementById('rateGrid').style.display = 'grid';
+}
+function rateCard(quality) {
+  const card = currentSession[sessionIndex];
+  updateReview(card.id, quality);
+  sessionIndex++;
+  renderSessionCard();
+}
+function endSession() { goTo('home'); }
+
+// ═══════════════════════════════
+//  ADD / EDIT CARD
+// ═══════════════════════════════
+function openAddCard(folderId) {
+  editingCardId = null;
+  currentImage = null;
+  document.getElementById('addTitle').textContent = 'Novo card';
+  document.getElementById('inputFront').value = '';
+  document.getElementById('inputBack').value = '';
+  document.getElementById('inputTags').value = '';
+  document.getElementById('imgPreview').style.display = 'none';
+  document.getElementById('uploadPlaceholder').style.display = 'block';
+  document.getElementById('removeImgBtn').style.display = 'none';
+  document.getElementById('deleteCardBtn').style.display = 'none';
+  populateFolderSelect(folderId || currentFolderId);
+  goToRaw('add');
+  document.getElementById('headerTitle').textContent = 'Novo card';
+}
+function editCard(cardId) {
+  const card = state.cards.find(c => c.id === cardId);
+  if (!card) return;
+  editingCardId = cardId;
+  currentImage = card.imageBase64 || null;
+  document.getElementById('addTitle').textContent = 'Editar card';
+  document.getElementById('inputFront').value = card.front;
+  document.getElementById('inputBack').value = card.back;
+  document.getElementById('inputTags').value = (card.tags || []).join(', ');
+  if (card.imageBase64) {
+    document.getElementById('imgPreview').src = card.imageBase64;
+    document.getElementById('imgPreview').style.display = 'block';
+    document.getElementById('uploadPlaceholder').style.display = 'none';
+    document.getElementById('removeImgBtn').style.display = 'block';
+  } else {
+    document.getElementById('imgPreview').style.display = 'none';
+    document.getElementById('uploadPlaceholder').style.display = 'block';
+    document.getElementById('removeImgBtn').style.display = 'none';
+  }
+  document.getElementById('deleteCardBtn').style.display = 'block';
+  populateFolderSelect(card.folderId);
+  goToRaw('add');
+  document.getElementById('headerTitle').textContent = 'Editar card';
+}
+function populateFolderSelect(selectedId) {
+  const sel = document.getElementById('inputFolder');
+  sel.innerHTML = state.folders.map(f =>
+    `<option value="${f.id}" ${f.id === selectedId ? 'selected':''}>${f.emoji || ''} ${f.name}</option>`
+  ).join('') + '<option value="__new__">+ Nova pasta</option>';
+  sel.onchange = () => {
+    document.getElementById('inputNewFolder').style.display = sel.value === '__new__' ? 'block' : 'none';
+  };
+}
+function handleImageUpload(e) {
+  const file = e.target.files[0];
+  if (!file) return;
+  if (file.size > 5 * 1024 * 1024) { alert('Imagem muito grande (máx. 5MB)'); return; }
+  const reader = new FileReader();
+  reader.onload = ev => {
+    currentImage = ev.target.result;
+    document.getElementById('imgPreview').src = currentImage;
+    document.getElementById('imgPreview').style.display = 'block';
+    document.getElementById('uploadPlaceholder').style.display = 'none';
+    document.getElementById('removeImgBtn').style.display = 'block';
+  };
+  reader.readAsDataURL(file);
+}
+function removeImage() {
+  currentImage = null;
+  document.getElementById('imgPreview').style.display = 'none';
+  document.getElementById('uploadPlaceholder').style.display = 'block';
+  document.getElementById('removeImgBtn').style.display = 'none';
+}
+function saveCard() {
+  const front = document.getElementById('inputFront').value.trim();
+  const back = document.getElementById('inputBack').value.trim();
+  if (!front || !back) { alert('Preencha frente e verso!'); return; }
+  let folderId = document.getElementById('inputFolder').value;
+  if (folderId === '__new__') {
+    const newName = document.getElementById('inputNewFolder').value.trim();
+    if (!newName) { alert('Digite um nome para a nova pasta'); return; }
+    const newFolder = { id: uid(), name: newName, emoji: '📚', color: '#7c6af7' };
+    state.folders.push(newFolder);
+    folderId = newFolder.id;
+  }
+  const tags = document.getElementById('inputTags').value.split(',').map(t => t.trim()).filter(Boolean);
+  if (editingCardId) {
+    const idx = state.cards.findIndex(c => c.id === editingCardId);
+    if (idx >= 0) {
+      state.cards[idx] = { ...state.cards[idx], front, back, folderId, tags, imageBase64: currentImage, updatedAt: Date.now() };
+    }
+  } else {
+    state.cards.push({ id: uid(), front, back, folderId, tags, imageBase64: currentImage, createdAt: Date.now() });
+  }
+  save();
+  cancelEdit();
+}
+function deleteCard(cardId) {
+  if (!confirm('Excluir este card?')) return;
+  state.cards = state.cards.filter(c => c.id !== cardId);
+  delete state.reviews[cardId];
+  save();
+  renderFolder();
+}
+function deleteCurrentCard() {
+  if (!editingCardId) return;
+  deleteCard(editingCardId);
+  cancelEdit();
+  goTo('home');
+}
+function cancelEdit() {
+  currentImage = null;
+  if (currentFolderId) {
+    openFolder(currentFolderId);
+  } else {
+    goTo('home');
+  }
+}
+
+// ═══════════════════════════════
+//  FOLDERS
+// ═══════════════════════════════
+function openModal(id) {
+  document.getElementById(id).classList.add('open');
+  // setup emoji
+  const picker = document.getElementById('emojiPicker');
+  picker.innerHTML = '';
+  '📚🧠💊🫀🧬🔬🩺🧪📋🫁🦴🩻🧫💉🩹🌡️🧾📌'.split('').forEach((e,i,arr) => {
+    if (!e.trim() || e.length < 1) return;
+    // handle multi-char emojis via [...'string'] instead
+  });
+  const emojis = [...'📚🧠💊🫀🧬🔬🩺🧪📋🫁🦴🩻🧫💉🩹🌡️📌'];
+  picker.innerHTML = emojis.map(e =>
+    `<span style="font-size:24px;cursor:pointer;padding:4px;border-radius:6px" onclick="selectEmoji('${e}',this)">${e}</span>`
+  ).join('');
+  selectedEmoji = '📚';
+  selectedColor = '#7c6af7';
+  document.getElementById('newFolderName').value = '';
+  // color dots
+  document.querySelectorAll('.color-dot').forEach((d,i) => {
+    d.classList.toggle('selected', i === 0);
+    d.onclick = () => { selectedColor = d.dataset.color; document.querySelectorAll('.color-dot').forEach(x=>x.classList.remove('selected')); d.classList.add('selected'); };
+  });
+}
+function selectEmoji(e, el) {
+  selectedEmoji = e;
+  document.querySelectorAll('#emojiPicker span').forEach(s => s.style.background='');
+  el.style.background = 'var(--accent-dim)';
+}
+function closeModal(id) { document.getElementById(id).classList.remove('open'); }
+function createFolder() {
+  const name = document.getElementById('newFolderName').value.trim();
+  if (!name) { alert('Digite um nome!'); return; }
+  state.folders.push({ id: uid(), name, emoji: selectedEmoji, color: selectedColor });
+  save();
+  closeModal('newFolderModal');
+  renderHome();
+}
+
+// ═══════════════════════════════
+//  SETTINGS
+// ═══════════════════════════════
+function renderSettings() {
+  document.getElementById('totalCardsCount').textContent = state.cards.length;
+  document.getElementById('dailyLimit').value = state.settings.dailyLimit || 20;
+  const imgToggle = document.getElementById('toggleImgFront');
+  imgToggle.classList.toggle('on', state.settings.showImgFront !== false);
+  updateDriveStatus();
+}
+function saveSetting(key, value) {
+  state.settings[key] = isNaN(value) ? value : Number(value);
+  save();
+}
+function toggleSetting(key, el) {
+  state.settings[key] = !state.settings[key];
+  el.classList.toggle('on', state.settings[key]);
+  save();
+}
+function exportData() {
+  const blob = new Blob([JSON.stringify(state, null, 2)], { type: 'application/json' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = `flashcards_backup_${new Date().toISOString().slice(0,10)}.json`;
+  a.click();
+}
+function importData(e) {
+  const file = e.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = ev => {
+    try {
+      const imported = JSON.parse(ev.target.result);
+      if (!imported.cards || !imported.folders) { alert('Arquivo inválido'); return; }
+      if (!confirm(`Importar ${imported.cards.length} cards? Seus dados atuais serão mantidos (merge).`)) return;
+      // Merge
+      imported.folders.forEach(f => { if (!state.folders.find(x => x.id === f.id)) state.folders.push(f); });
+      imported.cards.forEach(c => { if (!state.cards.find(x => x.id === c.id)) state.cards.push(c); });
+      Object.assign(state.reviews, imported.reviews || {});
+      save(); renderHome(); alert('Dados importados com sucesso!');
+    } catch(err) { alert('Erro ao importar: ' + err.message); }
+  };
+  reader.readAsText(file);
+}
+function clearAllData() {
+  if (!confirm('Isso vai apagar TODOS os seus cards e pastas. Tem certeza?')) return;
+  if (!confirm('Última chance — confirme para limpar tudo.')) return;
+  state = { folders:[], cards:[], reviews:{}, settings:{ dailyLimit:20, showImgFront:true, theme:'dark', streak:0, lastStudyDate:null }, driveFileId:null };
+  save(); renderHome(); goTo('home');
+}
+
+// ═══════════════════════════════
+//  GOOGLE DRIVE SYNC
+// ═══════════════════════════════
+async function syncDrive() {
+  const btn = document.getElementById('syncBtn');
+  btn.style.opacity = '.5';
+  updateDriveStatus('syncing');
+  try {
+    // Save to Drive as a JSON file via Claude API + Drive MCP
+    const payload = JSON.stringify({
+      cards: state.cards.map(c => ({ ...c, imageBase64: c.imageBase64 ? '[IMAGE]' : null })),
+      folders: state.folders,
+      reviews: state.reviews,
+      exportedAt: new Date().toISOString(),
+      totalCards: state.cards.length
+    });
+    const res = await fetch('https://api.anthropic.com/v1/messages', {
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({
+        model:'claude-sonnet-4-20250514',
+        max_tokens:1000,
+        mcp_servers:[{ type:'url', url:'https://drivemcp.googleapis.com/mcp/v1', name:'gdrive' }],
+        messages:[{
+          role:'user',
+          content:`Salve este conteúdo como um arquivo chamado "flashcards_sync.txt" no Google Drive do usuário. Conteúdo: ${payload.slice(0,2000)}... (truncado para metadata). Apenas confirme que foi salvo.`
+        }]
+      })
+    });
+    const data = await res.json();
+    const text = (data.content || []).map(b => b.text||'').join('');
+    if (text.toLowerCase().includes('erro') || !res.ok) throw new Error(text);
+    state.settings.lastSyncAt = new Date().toISOString();
+    save();
+    updateDriveStatus('synced');
+  } catch(e) {
+    updateDriveStatus('error');
+    console.warn('Drive sync:', e);
+  }
+  btn.style.opacity = '1';
+}
+function updateDriveStatus(status) {
+  const dot = document.getElementById('driveDot');
+  const txt = document.getElementById('driveStatusText');
+  if (!dot || !txt) return;
+  if (status === 'synced' || state.settings.lastSyncAt) {
+    dot.className = 'drive-dot synced';
+    txt.textContent = `Sincronizado em ${state.settings.lastSyncAt ? new Date(state.settings.lastSyncAt).toLocaleString('pt-BR') : '—'}`;
+  } else if (status === 'syncing') {
+    dot.className = 'drive-dot syncing';
+    txt.textContent = 'Sincronizando...';
+  } else if (status === 'error') {
+    dot.className = 'drive-dot';
+    txt.textContent = 'Erro na sincronização';
+  } else {
+    dot.className = 'drive-dot';
+    txt.textContent = 'Google Drive: não sincronizado';
+  }
+}
+
+// ═══════════════════════════════
+//  UTILS
+// ═══════════════════════════════
+function uid() { return Math.random().toString(36).slice(2) + Date.now().toString(36); }
+function shuffle(arr) { for(let i=arr.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[arr[i],arr[j]]=[arr[j],arr[i]]}return arr; }
+
+// ═══════════════════════════════
+//  BOOT
+// ═══════════════════════════════
+load();
+applyTheme(state.settings.theme);
+renderHome();
+
+// Demo data if empty
+if (state.folders.length === 0) {
+  const fid1 = uid(), fid2 = uid();
+  state.folders = [
+    { id: fid1, name: 'Farmacologia', emoji: '💊', color: '#7c6af7' },
+    { id: fid2, name: 'Psiquiatria', emoji: '🧠', color: '#2ec98a' }
+  ];
+  const cid1 = uid(), cid2 = uid(), cid3 = uid();
+  state.cards = [
+    { id: cid1, folderId: fid1, front: 'Qual o mecanismo dos IECAs?', back: 'Inibem a enzima conversora de angiotensina, bloqueando a conversão de Ang I → Ang II, reduzindo vasoconstrição e secreção de aldosterona.', tags: ['farmacologia','cardio'], createdAt: Date.now() },
+    { id: cid2, folderId: fid1, front: 'Qual a diferença entre IECA e BRA?', back: 'IECA bloqueia a ECA (efeito na bradicinina → tosse). BRA bloqueia diretamente o receptor AT1 da Ang II, sem efeito na bradicinina → menos tosse.', tags: ['farmacologia'], createdAt: Date.now() },
+    { id: cid3, folderId: fid2, front: 'Critérios diagnósticos do episódio maníaco (DSM-5)', back: 'Humor elevado/expansivo/irritável + aumento de energia por ≥1 semana, com ≥3 sintomas (grandiosidade, sono reduzido, fuga de ideias, etc.) causando prejuízo.', tags: ['psiquiatria','síndromes maníacas'], createdAt: Date.now() }
+  ];
+  // Set one as due now
+  state.reviews[cid1] = { due: Date.now() - 1000, interval: 1, ease: 2.5, reps: 0 };
+  state.reviews[cid3] = { due: Date.now() - 1000, interval: 1, ease: 2.5, reps: 0 };
+  save();
+  renderHome();
+}
+</script>
+</body>
+</html>
