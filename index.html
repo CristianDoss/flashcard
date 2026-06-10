@@ -135,8 +135,12 @@ body{font-family:var(--fb);background:var(--bg0);color:var(--text1);font-size:15
 .rate-btn.good{background:var(--green-dim);color:var(--green);border-color:var(--green)}
 .rate-btn:hover{transform:translateY(-2px)}
 
-/* SESSION DONE */
 .session-done{text-align:center;padding:40px 0}
+
+/* SESSION NAV BUTTONS */
+.session-nav-btn{flex:1;display:flex;align-items:center;justify-content:center;gap:5px;padding:9px 12px;border-radius:var(--r-md);background:var(--bg1);border:1px solid var(--border);color:var(--text2);font-family:var(--fb);font-size:13px;cursor:pointer;transition:all .15s}
+.session-nav-btn:hover:not(:disabled){background:var(--bg2);color:var(--text1);border-color:var(--border-h)}
+.session-nav-btn:disabled{opacity:.3;cursor:not-allowed}
 
 /* ADD/EDIT */
 .form-group{margin-bottom:18px}
@@ -245,6 +249,9 @@ body{font-family:var(--fb);background:var(--bg0);color:var(--text1);font-size:15
         <div class="icon-btn" onclick="openAddCard(currentFolderId)" title="Novo card" style="width:48px;height:48px;border-radius:var(--r-md)">
           <svg viewBox="0 0 24 24" width="18" height="18" stroke="currentColor" fill="none" stroke-width="2" stroke-linecap="round"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="12" y1="9" x2="12" y2="15"/><line x1="9" y1="12" x2="15" y2="12"/></svg>
         </div>
+        <div class="icon-btn" onclick="resetFolderProgress(currentFolderId)" title="Resetar progresso" style="width:48px;height:48px;border-radius:var(--r-md);color:var(--amber);border-color:var(--amber)">
+          <svg viewBox="0 0 24 24" width="18" height="18" stroke="currentColor" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 .49-4.5"/></svg>
+        </div>
       </div>
       <div id="subfolderList"></div>
       <div id="cardList"></div>
@@ -258,6 +265,16 @@ body{font-family:var(--fb);background:var(--bg0);color:var(--text1);font-size:15
         </button>
         <div class="progress-track"><div class="progress-fill" id="progressFill"></div></div>
         <span style="font-size:12px;color:var(--text2)" id="progressLabel">0/0</span>
+      </div>
+      <div style="display:flex;gap:8px;margin-bottom:14px">
+        <button class="session-nav-btn" id="prevCardBtn" onclick="prevCard()" title="Card anterior" disabled>
+          <svg viewBox="0 0 24 24" width="15" height="15" stroke="currentColor" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
+          Anterior
+        </button>
+        <button class="session-nav-btn" id="skipCardBtn" onclick="skipCard()" title="Pular card">
+          Pular
+          <svg viewBox="0 0 24 24" width="15" height="15" stroke="currentColor" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
+        </button>
       </div>
       <div id="sessionContent"></div>
     </div>
@@ -333,7 +350,15 @@ body{font-family:var(--fb);background:var(--bg0);color:var(--text1);font-size:15
             <label style="cursor:pointer"><input type="file" accept=".json" style="display:none" onchange="importData(event)"><span class="btn-sec" style="width:auto;padding:6px 14px;margin:0;font-size:13px;display:inline-block">Importar</span></label>
           </div>
           <div class="setting-row">
-            <div><div class="setting-label">Limpar todos os dados</div><div class="setting-sub" style="color:var(--red)">Irreversível</div></div>
+            <div><div class="setting-label">Resetar progresso de uma pasta</div><div class="setting-sub">Zera histórico de revisão da pasta</div></div>
+            <button class="btn-sec" style="width:auto;padding:6px 14px;margin:0;font-size:13px;color:var(--amber);border-color:var(--amber)" onclick="openResetFolderModal()">Resetar</button>
+          </div>
+          <div class="setting-row">
+            <div><div class="setting-label">Resetar TODO o progresso</div><div class="setting-sub">Todos os cards voltam ao início</div></div>
+            <button class="btn-sec" style="width:auto;padding:6px 14px;margin:0;font-size:13px;color:var(--amber);border-color:var(--amber)" onclick="resetAllProgress()">Resetar tudo</button>
+          </div>
+          <div class="setting-row">
+            <div><div class="setting-label">Limpar todos os dados</div><div class="setting-sub" style="color:var(--red)">Apaga cards e pastas — irreversível</div></div>
             <button class="btn-sec" style="width:auto;padding:6px 14px;margin:0;font-size:13px;color:var(--red);border-color:var(--red)" onclick="clearAllData()">Limpar</button>
           </div>
         </div>
@@ -693,6 +718,8 @@ function startFolderSession() {
 }
 
 // ═══ SESSION ═══
+let sessionHistory = []; // stack of {index, reviewSnapshot} for undo
+
 function startAllDueSession() { startSession(getDueCards(null)); }
 function startSession(cards) {
   if(cards.length===0){
@@ -703,7 +730,25 @@ function startSession(cards) {
   }
   currentSession = shuffle([...cards]);
   sessionIndex = 0;
+  sessionHistory = [];
   renderCard();
+}
+function prevCard() {
+  if(sessionHistory.length===0) return;
+  const prev = sessionHistory.pop();
+  // restore review state for the card we're going back to
+  state.reviews[prev.cardId] = prev.reviewSnapshot;
+  save();
+  sessionIndex = prev.index;
+  renderCard();
+}
+function skipCard() {
+  // push current to end of session without rating
+  const card = currentSession[sessionIndex];
+  if(!card) return;
+  currentSession.splice(sessionIndex, 1);
+  currentSession.push(card);
+  renderCard(); // same index, next card
 }
 function renderCard() {
   const content = document.getElementById('sessionContent');
@@ -719,6 +764,11 @@ function renderCard() {
   const pct = Math.round((sessionIndex/currentSession.length)*100);
   document.getElementById('progressFill').style.width=pct+'%';
   document.getElementById('progressLabel').textContent=`${sessionIndex}/${currentSession.length}`;
+  // prev/skip button state
+  const prevBtn = document.getElementById('prevCardBtn');
+  const skipBtn = document.getElementById('skipCardBtn');
+  if(prevBtn) prevBtn.disabled = sessionHistory.length === 0;
+  if(skipBtn) skipBtn.disabled = sessionIndex >= currentSession.length - 1;
   const folder = state.folders.find(f=>f.id===card.folderId);
   const showImgFront = card.imageBase64 && state.settings.showImgFront;
   const backImg = card.imageBase64 && !state.settings.showImgFront;
@@ -774,7 +824,14 @@ function flipCard() {
   inner.classList.add('flipped');
   document.getElementById('rateGrid').style.display='grid';
 }
-function rateCard(q) { updateReview(currentSession[sessionIndex].id,q); sessionIndex++; renderCard(); }
+function rateCard(q) {
+  const card = currentSession[sessionIndex];
+  const reviewBefore = {...getReview(card.id)};
+  sessionHistory.push({index: sessionIndex, cardId: card.id, reviewSnapshot: reviewBefore});
+  updateReview(card.id, q);
+  sessionIndex++;
+  renderCard();
+}
 function endSession() { goTo('home'); }
 
 // ═══ ADD/EDIT ═══
@@ -930,6 +987,49 @@ function clearAllData(){
   if(!confirm('Confirmar: apagar todos os cards e pastas?')) return;
   state={folders:[],cards:[],reviews:{},settings:{unlimited:true,showImgFront:true,theme:'dark',streak:0,lastStudyDate:null}};
   save();goTo('home');
+}
+
+// ═══ RESET PROGRESS ═══
+function resetAllProgress() {
+  if(!confirm('Resetar TODO o progresso? Todos os cards voltarão ao início, como se nunca tivessem sido revisados.')) return;
+  state.reviews = {};
+  state.settings.streak = 0;
+  state.settings.lastStudyDate = null;
+  save();
+  alert('Progresso resetado! Todos os cards estão disponíveis para revisão.');
+  renderHome();
+}
+function resetFolderProgress(folderId) {
+  const folder = state.folders.find(f=>f.id===folderId);
+  if(!folder) return;
+  const ids = getAllCardIdsInFolder(folderId);
+  ids.forEach(id => delete state.reviews[id]);
+  save();
+  alert(`Progresso de "${folder.name}" resetado!`);
+  if(currentFolderId===folderId) renderFolderDetail();
+  else renderHome();
+}
+function openResetFolderModal() {
+  if(state.folders.length===0){alert('Nenhuma pasta criada.');return;}
+  // Build a simple select prompt
+  const opts = [];
+  function addOpts(parentId, depth) {
+    state.folders.filter(f=>f.parentId===parentId||(!f.parentId&&!parentId)).forEach(f=>{
+      opts.push(`${'\u00a0\u00a0'.repeat(depth)}${f.emoji||''} ${f.name} (${getAllCardIdsInFolder(f.id).length} cards)`);
+      addOpts(f.id, depth+1);
+    });
+  }
+  addOpts(null,0);
+  const choice = prompt('Qual pasta resetar?\n\n' + opts.map((o,i)=>`${i+1}. ${o}`).join('\n') + '\n\nDigite o número:');
+  if(!choice) return;
+  const idx = parseInt(choice)-1;
+  const flat = [];
+  function flattenFolders(parentId,depth){state.folders.filter(f=>f.parentId===parentId||(!f.parentId&&!parentId)).forEach(f=>{flat.push(f);flattenFolders(f.id,depth+1);});}
+  flattenFolders(null,0);
+  const folder = flat[idx];
+  if(!folder){alert('Opção inválida.');return;}
+  if(!confirm(`Resetar progresso de "${folder.name}"? Os cards voltarão ao início.`)) return;
+  resetFolderProgress(folder.id);
 }
 
 // ═══ DRIVE ═══
